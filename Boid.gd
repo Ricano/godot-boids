@@ -8,10 +8,12 @@ export var separation_on = false
 export var alignment_on = false
 
 var separation = 1000
-var speed = 4
+var speed = 3
 
 var velocity = Vector2.ZERO
 var acceleration = Vector2.ZERO
+
+var force = 0.1
 
 var is_flying = false
 
@@ -34,20 +36,22 @@ func _input(event):
 			$AnimatedSprite.play('fly')
 		else:
 			$AnimatedSprite.play('default')
-			
+
+func _physics_process(delta):
+	if Engine.get_physics_frames() % 60 == 0:
+		
+		pass
+		#print(flockmates.size())
+
 func _process(delta):
 	if is_flying:
 		fly(delta)
 		
 func fly(delta):
-	
+	flockmates = []
 	check_sky(all_boids)
-	
 	flock()
 	move(delta)
-
-	# velocity = velocity.normalized() * speed * delta
-	#rotation = lerp_angle(rotation, velocity.angle_to_point(Vector2.ZERO), 0.4)
 
 func check_sky(all_boids):
 	for boid in all_boids:
@@ -55,69 +59,82 @@ func check_sky(all_boids):
 			flockmates.append(boid)
 			
 func flock():
+	var alignment = Vector2.ZERO
+	var cohesion = Vector2.ZERO
+	var separation = Vector2.ZERO
 	
 	if alignment_on:
-		var alignment = align(flockmates)
-		acceleration = alignment
+		alignment = align(flockmates) * 
 	
+	if cohesion_on:
+		cohesion = cohere(flockmates)
+	
+	if separation_on:
+		separation = separate(flockmates)
+
+	acceleration += alignment+cohesion+separation
 
 func align(flockmates):
-	var desired_velocity = Vector2.ZERO
+	var steering = Vector2.ZERO
 	var total = 0
 	for boid in flockmates:
 		if not boid == self and can_see(boid):
-			desired_velocity += boid.velocity
+			steering += boid.velocity
 			total += 1
 	
-	if total == 0:
-		return desired_velocity
+	if total > 0:
+		steering /= total
+		steering -= velocity
+		steering = steering * align_force
 	
-	desired_velocity /= total
-	desired_velocity -= velocity
+	return steering
+
+func cohere(flockmates):
+	var steering = Vector2.ZERO
+	var total = 0
+	for boid in flockmates:
+		if not boid == self and can_see(boid):
+			steering += boid.position
+			total += 1
 	
-	return desired_velocity
+	if total > 0:
+		steering /= total
+		steering -= position
+		steering -= velocity
+		steering = steering * cohesion_force
 	
+	return steering
+
+func separate(flockmates):
+	var steering = Vector2.ZERO
+	var total = 0
+	for boid in flockmates:
+		if not boid == self and can_see(boid):
+			var diff = position-boid.position
+			diff /= position.distance_to(boid.position)
+			steering += diff
+			total += 1
+	
+	if total > 0:
+		steering /= total
+		steering -= velocity
+		steering = steering * separation_force
+	
+	return steering
+
 func move(delta):
 	velocity += acceleration
-	position += velocity 
+	velocity = velocity.normalized() * speed
 	
-	# wrap_screen_if_needed()
+	position += velocity 
+	rotation = lerp_angle(rotation, velocity.angle_to_point(Vector2.ZERO), 0.4)
+	wrap_screen_if_needed()
 
 func can_see(boid):
 
 	return position.distance_to(boid.position) < radius
 
-#func check_neighbors() -> void:
-#	if neighbors:
-#		var count = neighbors.size()
-#
-#		var stay_away = Vector2.ZERO
-#		var avg_vel = Vector2.ZERO
-#		var avg_pos = Vector2.ZERO
-#
-#
-#		for n in neighbors:
-#			check_separation()
-#
-#			stay_away -= (n.global_position - global_position) * (distance /1.0001*(global_position - n.global_position).length())
-#			avg_vel += n.velocity
-#			avg_pos += n.position
-#
-#		avg_pos /= count
-#		velocity += (avg_pos - position)
-#		avg_vel /= count
-#		velocity += (avg_vel - velocity) / 2
-#		stay_away /= count
-#		velocity += stay_away
-#
 
-
-
-
-	
-
-	
-	
 func wrap_screen_if_needed():
 	if global_position.x < 0:
 		global_position.x = screensize.x

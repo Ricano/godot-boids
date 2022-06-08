@@ -5,7 +5,7 @@
 [ext_resource path="res://assets/imgs/chars/black_boid.png" type="Texture" id=3]
 
 [sub_resource type="CircleShape2D" id=9]
-radius = 605.546
+radius = 100.531
 
 [sub_resource type="AtlasTexture" id=2]
 flags = 4
@@ -53,6 +53,9 @@ animations = [ {
 [node name="Boid" type="Area2D" groups=["boids"]]
 scale = Vector2( 0.2, 0.2 )
 script = ExtResource( 1 )
+cohesion_on = true
+separation_on = true
+alignment_on = true
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2( 14.5, 2.5 )
